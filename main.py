@@ -2,13 +2,16 @@ from telebot import types
 from threading import Thread
 import telebot
 import psycopg2
-#API_TOKEN = '7154170243:AAGdWMvdTrwSt_L2UBzsW4dvpn9ixv6-uDM'
-API_TOKEN = '7154170243:AAGdWMvdTrwSt_L2UBzsW4dvpn9ixv6-uDM'
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+API_TOKEN = config.get('Settings', 'api')
 
 try:
-    # пытаемся подключиться к базе данных
-    conn = psycopg2.connect(dbname='mydb', user='user', password='mypassword', host='192.168.0.107', port='5432')
-    print('Successfully connection to database')
+    conn = psycopg2.connect(dbname='mydb', user='user', password='mypassword', host='127.0.0.1', port='5432')
+    print('Connection to database')
 except Exception as e:
     # в случае сбоя подключения будет выведено сообщение в STDOUT
     print('Can`t establish connection to database')
