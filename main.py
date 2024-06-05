@@ -1,22 +1,26 @@
 from telebot import types
 from threading import Thread
 import telebot
-import psycopg2
-#API_TOKEN = '7154170243:AAGdWMvdTrwSt_L2UBzsW4dvpn9ixv6-uDM'
-API_TOKEN = '7154170243:AAGdWMvdTrwSt_L2UBzsW4dvpn9ixv6-uDM'
+from postgres_db import database_request, database_response
+import configparser
+config = configparser.ConfigParser()
+config.read('config.ini')
+API_TOKEN = config['telegram_api']['token']
 
-try:
-    # пытаемся подключиться к базе данных
-    conn = psycopg2.connect(dbname='mydb', user='user', password='mypassword', host='192.168.0.107', port='5432')
-    print('Successfully connection to database')
-except Exception as e:
-    # в случае сбоя подключения будет выведено сообщение в STDOUT
-    print('Can`t establish connection to database')
-    print(e)
+database_request("""CREATE TABLE IF NOT EXISTS users( 
+                       user_id serial PRIMARY KEY,
+                       name_user varchar(30),
+                       chat_id int);"""
+                )
+database_request("""INSERT INTO users(name_user, chat_id)
+                    VALUES ('Mari', 646452);"""
+                )
+res = database_response("""SELECT * FROM users;"""
+                )
+print(res)
 bot = telebot.TeleBot(API_TOKEN)
 
 
-# Handle '/start' and '/help'
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = types.InlineKeyboardMarkup()
@@ -24,6 +28,7 @@ def send_welcome(message):
     btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
     markup.add(btn1)
     markup.add(btn2)
+    print(message.from_user.id, message.chat.id)
     bot.send_message(message.chat.id, f"""\
 Привет {message.from_user.first_name}\
 """, reply_markup=markup)
