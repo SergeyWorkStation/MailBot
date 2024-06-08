@@ -7,14 +7,8 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 API_TOKEN = config['telegram_api']['token']
 
-database_request("""CREATE TABLE IF NOT EXISTS users( 
-                       user_id serial PRIMARY KEY,
-                       name_user varchar(30),
-                       chat_id int);"""
-                )
-database_request("""INSERT INTO users(name_user, chat_id)
-                    VALUES ('Mari', 646452);"""
-                )
+
+
 res = database_response("""SELECT * FROM users;"""
                 )
 print(res)
@@ -23,6 +17,12 @@ bot = telebot.TeleBot(API_TOKEN)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    database_request(f"""INSERT INTO users(name_user, chat_id)
+                        SELECT '{message.from_user.first_name}', '{message.chat.id}'
+                        WHERE NOT EXISTS (SELECT 1 
+                                            FROM users 
+                                            WHERE chat_id = '{message.chat.id}');"""
+                     )
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("Зарегистрировать почтовый ящик", callback_data='register')
     btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
@@ -41,7 +41,7 @@ def callback_message(callback):
     elif callback.data == 'check':
         bot.send_message(callback.message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут')
 
-# Handle all other messages with content_type 'text' (content_types defaults to ['text'])
+
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     bot.reply_to(message, message.text)
