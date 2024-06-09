@@ -1,20 +1,24 @@
-from telebot import types
-from threading import Thread
-import telebot
-import insert_tables, create_tables
 import configparser
+from threading import Thread
+
+import telebot
+from telebot import types
+
+from create_tables import create_table
+from insert_tables import insert_post, insert_user
+from fetch_tables import get_all_post
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 API_TOKEN = config['telegram_api']['token']
 mails = dict()
-create_tables.create_table()
+create_table()
 bot = telebot.TeleBot(API_TOKEN)
 
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    insert_tables.insert_user(message.from_user.first_name, message.chat.id)
+    insert_user(message.from_user.first_name, message.chat.id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("Зарегистрировать почтовый ящик", callback_data='register')
     btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
@@ -23,6 +27,30 @@ def send_welcome(message):
     bot.send_message(message.chat.id, f"Приветствую, {message.from_user.first_name}, данный бот предназначен для "
                                       f"помощи в отслеживании важных писем вашей электронной почты. Выберите одно из "
                                       f"доступных действий", reply_markup=markup)
+
+
+@bot.message_handler(commands=['register_post'])
+def send_register(message):
+    global mails
+    mails[f'{message.chat.id}'] = {'email': None, 'password': None}
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton("Ввести email 📬", callback_data='email')
+    btn2 = types.InlineKeyboardButton("Ввести пароль 🔑", callback_data='password')
+    markup.add(btn1)
+    markup.add(btn2)
+    bot.send_message(message.chat.id, 'Вам необходимо ввести данные для авторизации своего почтового '
+                                      'ящика. Для этого нажмите на соответствующую кнопку и введите '
+                                      'значение.', reply_markup=markup)
+
+
+@bot.message_handler(commands=['check_post'])
+def chek_post(message):
+    markup = types.InlineKeyboardMarkup()
+    req = get_all_post(message.chat.id)
+    for post in req:
+        markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
+    bot.send_message(message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут',
+                     reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda callback: True)
@@ -41,7 +69,12 @@ def callback_function(callback):
                                                    'значение.', reply_markup=markup)
 
     elif callback.data == 'check':
-        bot.send_message(callback.message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут')
+        markup = types.InlineKeyboardMarkup()
+        req = get_all_post(callback.message.chat.id)
+        for post in req:
+            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
+        bot.send_message(callback.message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут',
+                         reply_markup=markup)
 
     elif callback.data == 'email':
         bot.register_next_step_handler(callback.message, register_email)
@@ -54,9 +87,9 @@ def callback_function(callback):
     elif callback.data == 'insert_db':
 
         try:
-            insert_tables.insert_post(email=mails[f'{callback.message.chat.id}']['email'],
-                                      password=mails[f'{callback.message.chat.id}']['password'],
-                                      chat_id=f'{callback.message.chat.id}')
+            insert_post(email=mails[f'{callback.message.chat.id}']['email'],
+                        password=mails[f'{callback.message.chat.id}']['password'],
+                        chat_id=f'{callback.message.chat.id}')
             bot.send_message(callback.message.chat.id,
                              f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉')
 
