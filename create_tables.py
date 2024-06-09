@@ -1,5 +1,6 @@
 from postgres_db import database_request
 
+
 def create_table():
     database_request("""CREATE TABLE IF NOT EXISTS users( 
                            user_id serial PRIMARY KEY,
@@ -7,7 +8,7 @@ def create_table():
                            chat_id int NOT NULL);
                         CREATE TABLE IF NOT EXISTS data_type( 
                            data_type_id serial PRIMARY KEY,
-                           name_data_type varchar(30) NOT NULL;
+                           name_data_type varchar(30) NOT NULL);
                         CREATE TABLE IF NOT EXISTS posts( 
                            post_id serial PRIMARY KEY,
                            email varchar(45) NOT NULL,
