@@ -49,7 +49,7 @@ def chek_post(message):
     req = get_all_post(message.chat.id)
     for post in req:
         markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
-    bot.send_message(message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут',
+    bot.send_message(message.chat.id, 'Выберите почтовый ящик 📬',
                      reply_markup=markup)
 
 
@@ -73,7 +73,7 @@ def callback_function(callback):
         req = get_all_post(callback.message.chat.id)
         for post in req:
             markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
-        bot.send_message(callback.message.chat.id, 'Функция регистрации проверки доступности почтовых ящиков будет тут',
+        bot.send_message(callback.message.chat.id, 'Выберите почтовый ящик 📬',
                          reply_markup=markup)
 
     elif callback.data == 'email':
