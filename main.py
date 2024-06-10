@@ -45,7 +45,7 @@ def send_register(message):
 
 
 @bot.message_handler(commands=['check_post'])
-def chek_post(message):
+def check_post(message):
     markup = types.InlineKeyboardMarkup()
     req = get_all_post(message.chat.id)
     for post in req:
@@ -84,6 +84,19 @@ def callback_function(callback):
     elif callback.data == 'password':
         bot.register_next_step_handler(callback.message, register_password)
         bot.send_message(callback.message.chat.id, 'Введите пароль:')
+
+    elif callback.data.split(':')[0] == 'posts':
+        markup = types.InlineKeyboardMarkup()
+        webAppTest = types.WebAppInfo("https://mail.yandex.ru/")
+        btn1 = types.InlineKeyboardButton("Создать правило для получения писем", callback_data='rules')
+        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data='rules_list')
+        btn3 = types.InlineKeyboardButton("Проверить соединение с сервером", web_app=webAppTest)
+
+        markup.add(btn1)
+        markup.add(btn2)
+        markup.add(btn3)
+        bot.send_message(callback.message.chat.id, 'Выберите действие для email 📬: ' + callback.data.split(':')[1],
+                         reply_markup=markup)
 
     elif callback.data == 'insert_db':
 
