@@ -7,6 +7,7 @@ from telebot import types
 from create_tables import create_table
 from insert_tables import insert_post, insert_user
 from fetch_tables import get_all_post
+from crypt import encrypt
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -87,8 +88,9 @@ def callback_function(callback):
     elif callback.data == 'insert_db':
 
         try:
+            encrypted_password = encrypt(mails[f'{callback.message.chat.id}']['password'])
             insert_post(email=mails[f'{callback.message.chat.id}']['email'],
-                        password=mails[f'{callback.message.chat.id}']['password'],
+                        password=encrypted_password,
                         chat_id=f'{callback.message.chat.id}')
             bot.send_message(callback.message.chat.id,
                              f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉')

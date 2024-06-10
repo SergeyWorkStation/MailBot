@@ -12,7 +12,7 @@ def create_table():
                         CREATE TABLE IF NOT EXISTS posts( 
                            post_id serial PRIMARY KEY,
                            email varchar(45) NOT NULL,
-                           password varchar(45) NOT NULL,
+                           password varchar(150) NOT NULL,
                            user_id int NOT NULL,
                            FOREIGN KEY (user_id)  
                            REFERENCES users (user_id) ON DELETE CASCADE);
