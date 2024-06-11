@@ -34,3 +34,5 @@ def database_response(query):
     finally:
         if conn:
             conn.close()
+
+

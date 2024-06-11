@@ -1,17 +1,18 @@
 from postgres_db import database_request
 
+
 def create_table():
     database_request("""CREATE TABLE IF NOT EXISTS users( 
                            user_id serial PRIMARY KEY,
                            name_user varchar(30),
-                           chat_id int NOT NULL);
+                           chat_id varchar(30) NOT NULL);
                         CREATE TABLE IF NOT EXISTS data_type( 
                            data_type_id serial PRIMARY KEY,
-                           name_data_type varchar(30) NOT NULL;
+                           name_data_type varchar(30) NOT NULL);
                         CREATE TABLE IF NOT EXISTS posts( 
                            post_id serial PRIMARY KEY,
                            email varchar(45) NOT NULL,
-                           password varchar(45) NOT NULL,
+                           password varchar(150) NOT NULL,
                            user_id int NOT NULL,
                            FOREIGN KEY (user_id)  
                            REFERENCES users (user_id) ON DELETE CASCADE);
