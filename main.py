@@ -6,8 +6,8 @@ from telebot import types
 
 from create_tables import create_table
 from insert_tables import insert_post, insert_user
-from fetch_tables import get_all_post
-from crypt import encrypt
+from fetch_tables import get_all_post, get_post_by_id
+from mail import MailFilter
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -49,7 +49,7 @@ def check_post(message):
     markup = types.InlineKeyboardMarkup()
     req = get_all_post(message.chat.id)
     for post in req:
-        markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
+        markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}:{post[2]}'))
     bot.send_message(message.chat.id, 'Выберите почтовый ящик 📬',
                      reply_markup=markup)
 
@@ -73,7 +73,7 @@ def callback_function(callback):
         markup = types.InlineKeyboardMarkup()
         req = get_all_post(callback.message.chat.id)
         for post in req:
-            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}'))
+            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}:{post[2]}'))
         bot.send_message(callback.message.chat.id, 'Выберите почтовый ящик 📬',
                          reply_markup=markup)
 
@@ -86,11 +86,11 @@ def callback_function(callback):
         bot.send_message(callback.message.chat.id, 'Введите пароль:')
 
     elif callback.data.split(':')[0] == 'posts':
+        post_id = callback.data.split(':')[2]
         markup = types.InlineKeyboardMarkup()
-        webAppTest = types.WebAppInfo("https://mail.yandex.ru/")
-        btn1 = types.InlineKeyboardButton("Создать правило для получения писем", callback_data='rules')
-        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data='rules_list')
-        btn3 = types.InlineKeyboardButton("Проверить соединение с сервером", web_app=webAppTest)
+        btn1 = types.InlineKeyboardButton("Создать правило для получения писем", callback_data='rules:' + post_id)
+        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data='rules_list:' + post_id)
+        btn3 = types.InlineKeyboardButton("Проверить соединение с сервером", callback_data='check_connection:' + post_id)
 
         markup.add(btn1)
         markup.add(btn2)
@@ -98,12 +98,21 @@ def callback_function(callback):
         bot.send_message(callback.message.chat.id, 'Выберите действие для email 📬: ' + callback.data.split(':')[1],
                          reply_markup=markup)
 
+    elif callback.data.split(':')[0] == 'check_connection':
+        post_id = callback.data.split(':')[1]
+        req = get_post_by_id(post_id)
+        mail = MailFilter(req[0], req[1])
+        if mail.is_connect():
+            bot.send_message(callback.message.chat.id, 'Подключение к почтовому ящику прошло успешно')
+        else:
+            bot.send_message(callback.message.chat.id, 'Не удалось подключиться к почтовому ящику. Проверьте логин и '
+                                                       'пароль, а также настройки вашего почтового ящика')
+
     elif callback.data == 'insert_db':
 
         try:
-            encrypted_password = encrypt(mails[f'{callback.message.chat.id}']['password'])
             insert_post(email=mails[f'{callback.message.chat.id}']['email'],
-                        password=encrypted_password,
+                        password=mails[f'{callback.message.chat.id}']['password'],
                         chat_id=f'{callback.message.chat.id}')
             bot.send_message(callback.message.chat.id,
                              f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉')
