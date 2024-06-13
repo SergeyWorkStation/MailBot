@@ -5,15 +5,17 @@ import telebot
 from telebot import types
 
 from create_tables import create_table
-from insert_tables import insert_post, insert_user
-from fetch_tables import get_all_post, get_post_by_id, get_all_rules
+from insert_tables import insert_post, insert_user, insert_data_type, insert_rule
+from fetch_tables import get_all_post, get_post_by_id, get_all_rules, get_all_data_type, get_name_data_type
 from mail import MailFilter
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 API_TOKEN = config['telegram_api']['token']
 mails = dict()
+rules = dict()
 create_table()
+# insert_data_type()
 bot = telebot.TeleBot(API_TOKEN)
 
 
@@ -22,27 +24,12 @@ def send_welcome(message):
     insert_user(message.from_user.first_name, message.chat.id)
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("Зарегистрировать почтовый ящик", callback_data='register')
-    btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
+    btn2 = types.InlineKeyboardButton("Список почтовых ящиков", callback_data='check')
     markup.add(btn1)
     markup.add(btn2)
     bot.send_message(message.chat.id, f"Приветствую, {message.from_user.first_name}, данный бот предназначен для "
                                       f"помощи в отслеживании важных писем вашей электронной почты. Выберите одно из "
                                       f"доступных действий", reply_markup=markup)
-
-
-@bot.message_handler(commands=['register_post'])
-def send_register(message):
-    global mails
-    mails[f'{message.chat.id}'] = {'email': None, 'password': None}
-    markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton("📬 Ввести email", callback_data='email')
-    btn2 = types.InlineKeyboardButton("🔑 Ввести пароль", callback_data='password')
-    btn3 = types.InlineKeyboardButton("🔙 Назад", callback_data='start')
-    markup.add(btn1, btn2)
-    markup.add(btn3)
-    bot.send_message(message.chat.id, 'Вам необходимо ввести данные для авторизации своего почтового '
-                                      'ящика. Для этого нажмите на соответствующую кнопку и введите '
-                                      'значение.', reply_markup=markup)
 
 
 @bot.message_handler(commands=['check_post'])
@@ -57,17 +44,17 @@ def check_post(message):
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_function(callback):
-    global mails
+    global mails, rules
     if callback.data == 'start':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton("Зарегистрировать почтовый ящик", callback_data='register')
-        btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
+        btn2 = types.InlineKeyboardButton("Список почтовых ящиков", callback_data='check')
         markup.add(btn1)
         markup.add(btn2)
         bot.send_message(callback.message.chat.id, "Выберите одно из "
                                                    f"доступных действий", reply_markup=markup)
-    if callback.data == 'register':
+    elif callback.data == 'register':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         mails[f'{callback.message.chat.id}'] = {'email': None, 'password': None}
         markup = types.InlineKeyboardMarkup()
@@ -87,7 +74,7 @@ def callback_function(callback):
         for post in req:
             markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[2]}:{post[0]}'))
         markup.add(types.InlineKeyboardButton("🔙 Назад", callback_data='start'))
-        bot.send_message(callback.message.chat.id, 'Выберите почтовый ящик 📬',
+        bot.send_message(callback.message.chat.id, '📬 Выберите почтовый ящик',
                          reply_markup=markup)
 
     elif callback.data == 'email':
@@ -159,6 +146,41 @@ def callback_function(callback):
                                                        'пароль, а также настройки вашего почтового ящика',
                              reply_markup=markup)
 
+    elif callback.data.split(':')[0] == 'rules':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        post_id = callback.data.split(':')[1]
+        email = callback.data.split(':')[2]
+        rules[f'{callback.message.chat.id}'] = {'from_email': None, 'action': None, 'post_id':post_id, 'email':email}
+        markup = types.InlineKeyboardMarkup()
+        btn1 = types.InlineKeyboardButton("📬 Ввести email отправителя", callback_data='from_email')
+        # btn2 = types.InlineKeyboardButton("🔑 Выбрать информацию из письма", callback_data='action')
+        btn3 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
+        btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data='start')
+        markup.add(btn1)
+        # markup.add(btn2)
+        markup.add(btn3, btn4)
+        bot.send_message(callback.message.chat.id, f'Создайте правило обработки входящих сообщений на email:{email}', reply_markup=markup)
+
+    elif callback.data == 'from_email':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        bot.register_next_step_handler(callback.message, from_email_enter)
+        bot.send_message(callback.message.chat.id, 'Введите email отправителя:')
+
+    elif callback.data.split(':')[0] =='action':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        markup = types.InlineKeyboardMarkup()
+        rules[f'{callback.message.chat.id}']['action'] = callback.data.split(':')[1]
+        name_data_type = get_name_data_type(rules[f'{callback.message.chat.id}']['action'])
+        btn1 = types.InlineKeyboardButton("Подтвердить данные", callback_data='insert_rules_db')
+        btn2 = types.InlineKeyboardButton("Повторить ввод",
+                                      callback_data=f'rules:{rules[f'{callback.message.chat.id}']['post_id']}'
+                                                    f':{rules[f'{callback.message.chat.id}']['email']}')
+        markup.add(btn1)
+        markup.add(btn2)
+        bot.send_message(callback.message.chat.id, f"Вы создали правило:\nПолучать "
+                                          f"{name_data_type.lower()} отправленных "
+                                          f"с {rules[f'{callback.message.chat.id}']['from_email']}", reply_markup=markup)
+
     elif callback.data == 'insert_db':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         markup = types.InlineKeyboardMarkup()
@@ -178,6 +200,35 @@ def callback_function(callback):
 
         finally:
             del mails[f'{callback.message.chat.id}']
+
+    elif callback.data == 'insert_rules_db':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("🔝 Начало", callback_data='start'))
+        try:
+            insert_rule(post_id=rules[f'{callback.message.chat.id}']['post_id'],
+                        email=rules[f'{callback.message.chat.id}']['from_email'],
+                        data_type_id=rules[f'{callback.message.chat.id}']['action'])
+            bot.send_message(callback.message.chat.id,
+                             f'Вы успешно зарегистрировали правило',
+                             reply_markup=markup)
+
+
+        except:
+            bot.send_message(callback.message.chat.id, 'Произошла ошибка😖😖😖\nЯ её исправляю😅🤥😏',
+                             reply_markup=markup)
+
+        finally:
+            del rules[f'{callback.message.chat.id}']
+
+
+def from_email_enter(message):
+    global rules
+    rules[f'{message.chat.id}']['from_email'] = message.text.strip()
+    markup = types.InlineKeyboardMarkup()
+    for data in get_all_data_type():
+        markup.add(types.InlineKeyboardButton(f"{data[1]}", callback_data=f'action:{data[0]}'))
+    bot.send_message(message.chat.id, f"Выберите, что необходимо получать из писем", reply_markup=markup)
 
 
 def register_email(message):

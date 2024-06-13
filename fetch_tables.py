@@ -26,3 +26,16 @@ def get_all_rules(post_id):
                                 FROM rules INNER JOIN data_type USING(data_type_id)
                                 WHERE post_id='{post_id}'
                                 ORDER BY email;""")
+
+
+def get_all_data_type():
+    return database_response(f"""SELECT *
+                                FROM data_type;""")
+
+
+def get_name_data_type(data_type_id):
+    return database_response(f"""SELECT name_data_type
+                                FROM data_type
+                                WHERE data_type_id={int(data_type_id)};""")[0][0]
+
+
