@@ -13,6 +13,11 @@ def get_all_post(chat_id):
     return [(i[0], decrypt(i[1]), i[2]) for i in result]
 
 
+def get_all_users():
+    return database_response(f"""SELECT *
+                                FROM users;""")
+
+
 def get_post_by_id(post_id):
     result = database_response(f"""SELECT email, password, post_id
                                 FROM posts
@@ -39,3 +44,9 @@ def get_name_data_type(data_type_id):
                                 WHERE data_type_id={int(data_type_id)};""")[0][0]
 
 
+def get_data_massage():
+    result = database_response(f"""SELECT chat_id, posts.email, password, rules.email, data_type_id
+                                    FROM users
+                                        INNER JOIN posts USING(user_id)
+                                        INNER JOIN rules USING(post_id);""")
+    return [(i[0], i[1], decrypt(i[2]), i[3], i[4]) for i in result]

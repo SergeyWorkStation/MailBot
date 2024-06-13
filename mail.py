@@ -45,3 +45,11 @@ class MailFilter:
         if mail:
             attachments = mail.get('attachments')
             return [(att.filename, att.payload) for att in attachments]
+
+    def get_response(self, data_type_id):
+        if data_type_id == 3:
+            return self.mail_html()
+        if data_type_id == 2:
+            return self.mail_file()
+        if data_type_id == 1:
+            return
