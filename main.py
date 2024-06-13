@@ -35,11 +35,10 @@ def send_register(message):
     global mails
     mails[f'{message.chat.id}'] = {'email': None, 'password': None}
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton("Ввести email 📬", callback_data='email')
-    btn2 = types.InlineKeyboardButton("Ввести пароль 🔑", callback_data='password')
-    btn3 = types.InlineKeyboardButton("Назад", callback_data='start')
-    markup.add(btn1)
-    markup.add(btn2)
+    btn1 = types.InlineKeyboardButton("📬 Ввести email", callback_data='email')
+    btn2 = types.InlineKeyboardButton("🔑 Ввести пароль", callback_data='password')
+    btn3 = types.InlineKeyboardButton("🔙 Назад", callback_data='start')
+    markup.add(btn1, btn2)
     markup.add(btn3)
     bot.send_message(message.chat.id, 'Вам необходимо ввести данные для авторизации своего почтового '
                                       'ящика. Для этого нажмите на соответствующую кнопку и введите '
@@ -66,16 +65,17 @@ def callback_function(callback):
         btn2 = types.InlineKeyboardButton("Проверка доступности почтовых ящиков", callback_data='check')
         markup.add(btn1)
         markup.add(btn2)
-        bot.send_message(callback.message.chat.id, f"{callback.message.from_user.first_name}, выберите одно из "
+        bot.send_message(callback.message.chat.id, "Выберите одно из "
                                                    f"доступных действий", reply_markup=markup)
     if callback.data == 'register':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         mails[f'{callback.message.chat.id}'] = {'email': None, 'password': None}
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton("Ввести email 📬", callback_data='email')
-        btn2 = types.InlineKeyboardButton("Ввести пароль 🔑", callback_data='password')
-        markup.add(btn1)
-        markup.add(btn2)
+        btn1 = types.InlineKeyboardButton("📬 Ввести email", callback_data='email')
+        btn2 = types.InlineKeyboardButton("🔑 Ввести пароль", callback_data='password')
+        btn3 = types.InlineKeyboardButton("🔙 Назад", callback_data='start')
+        markup.add(btn1, btn2)
+        markup.add(btn3)
         bot.send_message(callback.message.chat.id, 'Вам необходимо ввести данные для авторизации своего почтового '
                                                    'ящика. Для этого нажмите на соответствующую кнопку и введите '
                                                    'значение.', reply_markup=markup)
@@ -85,7 +85,8 @@ def callback_function(callback):
         markup = types.InlineKeyboardMarkup()
         req = get_all_post(callback.message.chat.id)
         for post in req:
-            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[0]}:{post[2]}'))
+            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[2]}:{post[0]}'))
+        markup.add(types.InlineKeyboardButton("🔙 Назад", callback_data='start'))
         bot.send_message(callback.message.chat.id, 'Выберите почтовый ящик 📬',
                          reply_markup=markup)
 
@@ -101,56 +102,79 @@ def callback_function(callback):
 
     elif callback.data.split(':')[0] == 'posts':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
-        post_id = callback.data.split(':')[2]
+        post_id = callback.data.split(':')[1]
+        email = callback.data.split(':')[2]
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton("Создать правило для получения писем", callback_data='rules:' + post_id)
-        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data='rules_list:' + post_id)
+        btn1 = types.InlineKeyboardButton("Создать правило для получения писем",
+                                          callback_data=f'rules:{post_id}:{email}')
+        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data=f'rules_list:{post_id}:{email}')
         btn3 = types.InlineKeyboardButton("Проверить соединение с сервером",
-                                          callback_data='check_connection:' + post_id)
+                                          callback_data=f'check_connection:{post_id}:{email}')
+        btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data='check')
+        btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
         markup.add(btn1)
         markup.add(btn2)
         markup.add(btn3)
-        bot.send_message(callback.message.chat.id, 'Выберите действие для email 📬: ' + callback.data.split(':')[1],
-                         reply_markup=markup)
+        markup.add(btn4, btn5)
+        bot.send_message(callback.message.chat.id, '📬 Выберите действие для email: ' + email, reply_markup=markup)
 
     elif callback.data.split(':')[0] == 'rules_list':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        post_id = callback.data.split(':')[1]
+        email = callback.data.split(':')[2]
         markup = types.InlineKeyboardMarkup()
-        req = get_all_rules(callback.data.split(':')[1])
+        req = get_all_rules(post_id)
         if req:
             for rule in req:
                 markup.add(types.InlineKeyboardButton(f'Получать {rule[1].lower()} от {rule[0]} ',
                                                       callback_data=f'rule:{rule[2]}'))
+            btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
+            btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
+            markup.add(btn4, btn5)
             bot.send_message(callback.message.chat.id, 'Выберите правило 📬',
                              reply_markup=markup)
         else:
+            btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
+            btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
+            markup.add(btn4, btn5)
             bot.send_message(callback.message.chat.id, 'Список пуст 📬',
                              reply_markup=markup)
+
 
     elif callback.data.split(':')[0] == 'check_connection':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
         post_id = callback.data.split(':')[1]
+        email = callback.data.split(':')[2]
         req = get_post_by_id(post_id)
         mail = MailFilter(req[0], req[1])
+        markup = types.InlineKeyboardMarkup()
+        btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
+        btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
+        markup.add(btn4, btn5)
         if mail.is_connect():
-            bot.send_message(callback.message.chat.id, 'Подключение к почтовому ящику прошло успешно')
+            bot.send_message(callback.message.chat.id, '✅ Подключение к почтовому ящику прошло успешно',
+                             reply_markup=markup)
         else:
-            bot.send_message(callback.message.chat.id, 'Не удалось подключиться к почтовому ящику. Проверьте логин и '
-                                                       'пароль, а также настройки вашего почтового ящика')
+            bot.send_message(callback.message.chat.id, '❌ Не удалось подключиться к почтовому ящику. Проверьте логин и '
+                                                       'пароль, а также настройки вашего почтового ящика',
+                             reply_markup=markup)
 
     elif callback.data == 'insert_db':
         bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("🔝 Начало", callback_data='start'))
         try:
             insert_post(email=mails[f'{callback.message.chat.id}']['email'],
                         password=mails[f'{callback.message.chat.id}']['password'],
                         chat_id=f'{callback.message.chat.id}')
-            bot.register_next_step_handler(callback.message, send_welcome)
             bot.send_message(callback.message.chat.id,
-                             f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉')
+                             f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉',
+                             reply_markup=markup)
 
 
         except:
-            bot.send_message(callback.message.chat.id, 'Произошла ошибка😖😖😖\nЯ её исправляю😅🤥😏')
+            bot.send_message(callback.message.chat.id, 'Произошла ошибка😖😖😖\nЯ её исправляю😅🤥😏',
+                             reply_markup=markup)
 
         finally:
             del mails[f'{callback.message.chat.id}']
@@ -166,7 +190,8 @@ def register_email(message):
         markup.add(btn1)
         markup.add(btn2)
         bot.send_message(message.chat.id, f"""Ваш email: {mails[f'{message.chat.id}']['email']}
-    Ваш пароль: {mails[f'{message.chat.id}']['password']}""", reply_markup=markup)
+    Ваш пароль: {mails[f'{message.chat.id}']['password']}""",
+                         reply_markup=markup)
     else:
         btn = types.InlineKeyboardButton("Ввести пароль 🔑", callback_data='password')
         markup.add(btn)

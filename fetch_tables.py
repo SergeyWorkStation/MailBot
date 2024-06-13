@@ -23,6 +23,6 @@ def get_post_by_id(post_id):
 
 def get_all_rules(post_id):
     return database_response(f"""SELECT email, name_data_type, rule_id
-                                FROM posts INNER JOIN data_type USING(data_type_id)
+                                FROM rules INNER JOIN data_type USING(data_type_id)
                                 WHERE post_id='{post_id}'
                                 ORDER BY email;""")
