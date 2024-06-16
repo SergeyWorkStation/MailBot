@@ -13,4 +13,3 @@ def encrypt(password):
 
 def decrypt(encrypted_password):
     return FERNET.decrypt(encrypted_password).decode()
-
