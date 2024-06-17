@@ -6,6 +6,7 @@ from telebot import types
 from create_tables import create_table
 from insert_tables import insert_post, insert_user, insert_data_type, insert_rule
 from fetch_tables import get_all_post, get_post_by_id, get_all_rules, get_all_data_type, get_name_data_type
+from delete_tables import delete_post
 from mail import MailFilter
 
 config = configparser.ConfigParser()
@@ -92,17 +93,19 @@ def callback_function(callback):
         post_id = callback.data.split(':')[1]
         email = callback.data.split(':')[2]
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton("Создать правило для получения писем",
+        btn1 = types.InlineKeyboardButton("📩 Создать правило для получения писем",
                                           callback_data=f'rules:{post_id}:{email}')
-        btn2 = types.InlineKeyboardButton("Список правил для почты", callback_data=f'rules_list:{post_id}:{email}')
-        btn3 = types.InlineKeyboardButton("Проверить соединение с сервером",
+        btn2 = types.InlineKeyboardButton("📄 Список правил для почты", callback_data=f'rules_list:{post_id}:{email}')
+        btn3 = types.InlineKeyboardButton("🌐 Проверить соединение с сервером",
                                           callback_data=f'check_connection:{post_id}:{email}')
-        btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data='check')
-        btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
+        btn4 = types.InlineKeyboardButton("❌ Удалить почтовый ящик", callback_data=f'delete_post:{post_id}')
+        btn5 = types.InlineKeyboardButton("🔙 Назад", callback_data='check')
+        btn6 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
         markup.add(btn1)
         markup.add(btn2)
         markup.add(btn3)
-        markup.add(btn4, btn5)
+        markup.add(btn4)
+        markup.add(btn5, btn6)
         bot.send_message(callback.message.chat.id, '📬 Выберите действие для email: ' + email, reply_markup=markup)
 
     elif callback.data.split(':')[0] == 'rules_list':
@@ -159,6 +162,18 @@ def callback_function(callback):
         # markup.add(btn2)
         markup.add(btn3, btn4)
         bot.send_message(callback.message.chat.id, f'Создайте правило обработки входящих сообщений на email:{email}',
+                         reply_markup=markup)
+
+    elif callback.data.split(':')[0] == 'delete_post':
+        bot.delete_message(callback.message.chat.id, callback.message.message_id)
+        post_id = callback.data.split(':')[1]
+        delete_post(post_id)
+        markup = types.InlineKeyboardMarkup()
+        req = get_all_post(callback.message.chat.id)
+        for post in req:
+            markup.add(types.InlineKeyboardButton(post[0], callback_data=f'posts:{post[2]}:{post[0]}'))
+        markup.add(types.InlineKeyboardButton("🔙 Назад", callback_data='start'))
+        bot.send_message(callback.message.chat.id, '📬 Выберите почтовый ящик',
                          reply_markup=markup)
 
     elif callback.data == 'from_email':
