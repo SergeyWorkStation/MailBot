@@ -4,7 +4,7 @@ import telebot
 from telebot import types
 
 from create_tables import create_table
-from insert_tables import insert_post, insert_user, insert_data_type, insert_rule
+from insert_tables import insert_post, insert_user, insert_rule
 from fetch_tables import get_all_post, get_post_by_id, get_all_rules, get_all_data_type, get_name_data_type
 from delete_tables import delete_post
 from mail import MailFilter
@@ -15,8 +15,6 @@ API_TOKEN = config['telegram_api']['token']
 mails = dict()
 rules = dict()
 create_table()
-if not get_all_data_type():
-    insert_data_type()
 bot = telebot.TeleBot(API_TOKEN)
 
 
@@ -155,12 +153,10 @@ def callback_function(callback):
         rules[f'{callback.message.chat.id}'] = {'from_email': None, 'action': None, 'post_id': post_id, 'email': email}
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton("📬 Ввести email отправителя", callback_data='from_email')
-        # btn2 = types.InlineKeyboardButton("🔑 Выбрать информацию из письма", callback_data='action')
-        btn3 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
-        btn4 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
+        btn2 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
+        btn3 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
         markup.add(btn1)
-        # markup.add(btn2)
-        markup.add(btn3, btn4)
+        markup.add(btn2, btn3)
         bot.send_message(callback.message.chat.id, f'Создайте правило обработки входящих сообщений на email:{email}',
                          reply_markup=markup)
 
