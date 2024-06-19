@@ -7,7 +7,7 @@ from create_tables import create_table
 from insert_tables import insert_post, insert_user, insert_rule
 from fetch_tables import get_all_post, get_post_by_id, get_all_rules, get_all_data_type, get_name_data_type
 from delete_tables import delete_post
-from mail import MailFilter
+from mail import Mail
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -133,12 +133,11 @@ def callback_function(callback):
         post_id = callback.data.split(':')[1]
         email = callback.data.split(':')[2]
         req = get_post_by_id(post_id)
-        mail = MailFilter(req[0], req[1])
         markup = types.InlineKeyboardMarkup()
         btn4 = types.InlineKeyboardButton("🔙 Назад", callback_data=f'posts:{post_id}:{email}')
         btn5 = types.InlineKeyboardButton("🔝 Начало", callback_data='start')
         markup.add(btn4, btn5)
-        if mail.is_connect():
+        if Mail(req[0], req[1]).is_connect():
             bot.send_message(callback.message.chat.id, '✅ Подключение к почтовому ящику прошло успешно',
                              reply_markup=markup)
         else:
@@ -202,14 +201,12 @@ def callback_function(callback):
                         password=mails[f'{callback.message.chat.id}']['password'],
                         chat_id=f'{callback.message.chat.id}')
             bot.send_message(callback.message.chat.id,
-                             f'Вы успешно зарегистрировали email: {mails[f'{callback.message.chat.id}']['email']}🎉',
+                             f'Вы успешно зарегистрировали почтовый ящик: {mails[f'{callback.message.chat.id}']['email']}🎉\n'
+                             f'Для корректной работы бота с почтовым ящиком, проверьте разрешение работы "других приложений" с протоколом IMAP',
                              reply_markup=markup)
-
-
-        except:
-            bot.send_message(callback.message.chat.id, 'Произошла ошибка😖😖😖\nЯ её исправляю😅🤥😏',
+        except Exception as e:
+            bot.send_message(callback.message.chat.id, f'Произошла ошибка😖😖😖 ({e})\nЯ её исправляю😅🤥😏',
                              reply_markup=markup)
-
         finally:
             del mails[f'{callback.message.chat.id}']
 
@@ -224,12 +221,9 @@ def callback_function(callback):
             bot.send_message(callback.message.chat.id,
                              f'Вы успешно зарегистрировали правило',
                              reply_markup=markup)
-
-
-        except:
-            bot.send_message(callback.message.chat.id, 'Произошла ошибка😖😖😖\nЯ её исправляю😅🤥😏',
-                             reply_markup=markup)
-
+        except Exception as e:
+            bot.send_message(callback.message.chat.id, f'Произошла ошибка😖😖😖 ({e})\nЯ её исправляю😅🤥😏',
+                            reply_markup=markup)
         finally:
             del rules[f'{callback.message.chat.id}']
 

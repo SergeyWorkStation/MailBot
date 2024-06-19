@@ -48,5 +48,6 @@ def get_data_massage():
     result = database_response(f"""SELECT chat_id, posts.email, password, rules.email, data_type_id
                                     FROM users
                                         INNER JOIN posts USING(user_id)
-                                        INNER JOIN rules USING(post_id);""")
+                                        INNER JOIN rules USING(post_id)
+                                        ORDER BY posts.email;""")
     return [(i[0], i[1], decrypt(i[2]), i[3], i[4]) for i in result]
