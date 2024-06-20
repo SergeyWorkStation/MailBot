@@ -25,5 +25,11 @@ def create_table():
                            REFERENCES posts (post_id) ON DELETE CASCADE,
                            FOREIGN KEY (data_type_id)  
                            REFERENCES data_type (data_type_id) ON DELETE CASCADE);
+                        INSERT INTO data_type (name_data_type)
+                        SELECT * 
+                        FROM (VALUES ('Всё содержание писем'), 
+                                     ('Файлы из писем'), 
+                                     ('Текст из писем')) _
+                        WHERE NOT EXISTS (SELECT * FROM data_type); 
                         """
                      )
